@@ -11,6 +11,10 @@ extends Node2D
 @onready var monster_label: Label = $CanvasLayer/HUD/CombatPanel/MonsterLabel
 @onready var roll_label: Label = $CanvasLayer/HUD/CombatPanel/RollLabel
 @onready var attack_button: Button = $CanvasLayer/HUD/CombatPanel/AttackButton
+@onready var room_panel: Panel = $CanvasLayer/HUD/RoomPanel
+@onready var room_background: TextureRect = $CanvasLayer/HUD/RoomPanel/RoomBackground
+@onready var room_description: Label = $CanvasLayer/HUD/RoomPanel/RoomDescription
+@onready var leave_button: Button = $CanvasLayer/HUD/RoomPanel/LeaveButton
 
 var empty_doors_count: int = 0
 var is_game_over: bool = false
@@ -18,16 +22,36 @@ var game_started: bool = false
 var monster_health: int = 0
 var is_player_turn: bool = true
 var is_moving: bool = false
+var current_door_type: String = ""
 
 func _ready() -> void:
 	start_panel.visible = true
 	game_over_panel.visible = false
 	combat_panel.visible = false
+	room_panel.visible = false
 	if player_entity:
 		player_entity.set_physics_process(false)
 	
 	if not attack_button.pressed.is_connected(_on_attack_button_pressed):
 		attack_button.pressed.connect(_on_attack_button_pressed)
+	
+	if not leave_button.pressed.is_connected(_on_leave_button_pressed):
+		leave_button.pressed.connect(_on_leave_button_pressed)
+	
+	room_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	room_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	room_background.anchor_right = 1.0
+	room_background.anchor_bottom = 0.8
+	
+	room_description.anchor_top = 0.8
+	room_description.anchor_right = 1.0
+	room_description.anchor_bottom = 0.9
+	room_description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	leave_button.anchor_top = 0.9
+	leave_button.anchor_left = 0.4
+	leave_button.anchor_right = 0.6
+	leave_button.anchor_bottom = 1.0
 	
 	var start_button: Button = start_panel.get_node("StartButton")
 	if not start_button.pressed.is_connected(_on_start_button_pressed):
@@ -45,9 +69,11 @@ func start_new_game() -> void:
 	is_game_over = false
 	game_started = true
 	is_moving = false
+	current_door_type = ""
 	start_panel.visible = false
 	game_over_panel.visible = false
 	combat_panel.visible = false
+	room_panel.visible = false
 	
 	if player_entity:
 		player_entity.set_physics_process(true)
@@ -92,30 +118,57 @@ func _on_door_entered(door: Area2D) -> void:
 	if is_game_over or not game_started:
 		return
 		
-	match door.type:
+	current_door_type = door.type
+	show_room(door.type)
+
+func show_room(type: String) -> void:
+	is_moving = true
+	room_panel.visible = true
+	match type:
 		"monster":
-			message_label.text = ""
+			room_background.texture = preload("res://assets/generated/dungeon_monster_room_frame_0.png")
+			room_description.text = "A fearsome monster blocks your path!"
+			leave_button.text = "Fight!"
+		"chest":
+			room_background.texture = preload("res://assets/generated/dungeon_chest_room_frame_0.png")
+			room_description.text = "You found a mysterious chest!"
+			leave_button.text = "Open Chest"
+		"empty":
+			room_background.texture = preload("res://assets/generated/dungeon_empty_room_frame_0.png")
+			room_description.text = "An empty room... but you feel closer to the exit."
+			if empty_doors_count + 1 >= 4:
+				leave_button.text = "Proceed to Exit"
+			else:
+				leave_button.text = "Leave Room"
+		"exit":
+			room_background.texture = preload("res://assets/generated/dungeon_exit_open_frame_0.png")
+			room_description.text = "Freedom awaits!"
+			leave_button.text = "ESCAPE!"
+
+func _on_leave_button_pressed() -> void:
+	room_panel.visible = false
+	match current_door_type:
+		"monster":
 			start_combat()
 		"chest":
 			apply_treasure()
-			reset_player()
-			is_moving = false
+			finish_turn()
 		"empty":
 			empty_doors_count += 1
 			if empty_doors_count >= 4:
-				message_label.text = "YOU ESCAPED THE LABYRINTH! YOU WIN!"
-				trigger_game_over(true)
+				current_door_type = "victory"
+				show_room("exit")
 			else:
 				message_label.text = "An empty door! You are closer to the exit..."
-				update_ui()
-				reset_player()
-				is_moving = false
-		"exit":
-			message_label.text = "YOU ESCAPED THE LABYRINTH! YOU WIN!"
+				finish_turn()
+		"victory":
 			trigger_game_over(true)
-	
-	if not is_game_over and door.type != "monster":
-		randomize_doors()
+
+func finish_turn() -> void:
+	reset_player()
+	is_moving = false
+	randomize_doors()
+	update_ui()
 
 func apply_treasure() -> void:
 	var roll: int = randi() % 4

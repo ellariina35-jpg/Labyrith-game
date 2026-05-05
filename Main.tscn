@@ -40,6 +40,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 1.0
+offset_right = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -230,6 +232,55 @@ offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "Start Game"
+
+[node name="RoomPanel" type="Panel" parent="CanvasLayer/HUD" unique_id=2043333015]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RoomBackground" type="TextureRect" parent="CanvasLayer/HUD/RoomPanel" unique_id=1425546795]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RoomDescription" type="Label" parent="CanvasLayer/HUD/RoomPanel" unique_id=580703128]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -150.0
+offset_bottom = -70.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 32
+text = "Room Description"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LeaveButton" type="Button" parent="CanvasLayer/HUD/RoomPanel" unique_id=1409299659]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -60.0
+offset_right = 100.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Leave Room"
 
 [connection signal="pressed" from="CanvasLayer/HUD/GameOverPanel/RestartButton" to="." method="_on_restart_button_pressed"]
 [connection signal="pressed" from="CanvasLayer/HUD/StartPanel/StartButton" to="." method="_on_start_button_pressed"]
