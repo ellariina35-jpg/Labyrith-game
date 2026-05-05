@@ -31,6 +31,7 @@ Labyrinth Espace.exe
 ## 🛠️ Built With
 
 - [Godot Engine](https://godotengine.org/) - Game engine
+- version: 4.6.2.stable.mono
 - GDScript - Scripting language
 
 ## 📁 Project Structure
