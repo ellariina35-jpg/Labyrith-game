@@ -68,10 +68,6 @@ func _on_restart_button_pressed() -> void:
 
 func randomize_doors() -> void:
 	var type_options: Array[String] = ["monster", "chest", "empty"]
-	
-	if empty_doors_count >= 4:
-		type_options = ["monster", "chest", "exit"]
-	
 	type_options.shuffle()
 	
 	for i in range(doors.size()):
@@ -106,14 +102,17 @@ func _on_door_entered(door: Area2D) -> void:
 			is_moving = false
 		"empty":
 			empty_doors_count += 1
-			message_label.text = "An empty door! Progress: %d/4" % empty_doors_count
-			update_ui()
-			reset_player()
-			is_moving = false
+			if empty_doors_count >= 4:
+				message_label.text = "YOU ESCAPED THE LABYRINTH! YOU WIN!"
+				trigger_game_over(true)
+			else:
+				message_label.text = "An empty door! You are closer to the exit..."
+				update_ui()
+				reset_player()
+				is_moving = false
 		"exit":
 			message_label.text = "YOU ESCAPED THE LABYRINTH! YOU WIN!"
 			trigger_game_over(true)
-			is_moving = false
 	
 	if not is_game_over and door.type != "monster":
 		randomize_doors()
@@ -229,10 +228,11 @@ func reset_player() -> void:
 func trigger_game_over(win: bool) -> void:
 	is_game_over = true
 	game_started = false
+	is_moving = false
 	if player_entity:
 		player_entity.set_physics_process(false)
 	game_over_panel.visible = true
-	var game_over_label = game_over_panel.get_node("GameOverLabel")
+	var game_over_label: Label = game_over_panel.get_node("GameOverLabel")
 	if win:
 		game_over_label.text = "YOU ESCAPED!"
 	else:

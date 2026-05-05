@@ -1,9 +1,9 @@
 [gd_scene format=4 uid="uid://5jhsyyqjis37"]
 
-[ext_resource type="Script" uid="uid://bh4rjliublrew" path="res://Main.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://br1ixxd2w8yie" path="res://Main.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bwcxdpyffetqn" path="res://assets/generated/stone_tiles.png" id="2_cm0pq"]
 [ext_resource type="PackedScene" uid="uid://kxriw25u4vpd" path="res://Player.tscn" id="2_player"]
-[ext_resource type="PackedScene" path="res://Door.tscn" id="3_door"]
+[ext_resource type="PackedScene" uid="uid://huuq4md05leq" path="res://Door.tscn" id="3_door"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_fos0i"]
 texture = ExtResource("2_cm0pq")
