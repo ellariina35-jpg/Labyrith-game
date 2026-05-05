@@ -1,11 +1,10 @@
 extends Node2D
 
-@onready var player: Player = $Player
+@onready var player_entity: CharacterBody2D = $Player
 @onready var message_label: Label = $CanvasLayer/HUD/MessageLabel
 @onready var doors: Array = [$Path1, $Path2, $Path3]
 @onready var start_panel: Panel = $CanvasLayer/HUD/StartPanel
 @onready var game_over_panel: Panel = $CanvasLayer/HUD/GameOverPanel
-
 @onready var health_label: Label = $CanvasLayer/HUD/HealthLabel
 @onready var combat_panel: Panel = $CanvasLayer/HUD/CombatPanel
 @onready var battle_label: Label = $CanvasLayer/HUD/CombatPanel/BattleLabel
@@ -18,198 +17,222 @@ var is_game_over: bool = false
 var game_started: bool = false
 var monster_health: int = 0
 var is_player_turn: bool = true
+var is_moving: bool = false
 
 func _ready() -> void:
-	self.start_panel.visible = true
-	self.game_over_panel.visible = false
-	self.combat_panel.visible = false
-	if self.player:
-		self.player.set_physics_process(false)
+	start_panel.visible = true
+	game_over_panel.visible = false
+	combat_panel.visible = false
+	if player_entity:
+		player_entity.set_physics_process(false)
 	
-	if not self.attack_button.pressed.is_connected(self._on_attack_button_pressed):
-		self.attack_button.pressed.connect(self._on_attack_button_pressed)
+	if not attack_button.pressed.is_connected(_on_attack_button_pressed):
+		attack_button.pressed.connect(_on_attack_button_pressed)
 	
-	var start_button: Button = self.start_panel.get_node("StartButton")
-	if not start_button.pressed.is_connected(self._on_start_button_pressed):
-		start_button.pressed.connect(self._on_start_button_pressed)
+	var start_button: Button = start_panel.get_node("StartButton")
+	if not start_button.pressed.is_connected(_on_start_button_pressed):
+		start_button.pressed.connect(_on_start_button_pressed)
 		
-	var restart_button: Button = self.game_over_panel.get_node("RestartButton")
-	if not restart_button.pressed.is_connected(self._on_restart_button_pressed):
-		restart_button.pressed.connect(self._on_restart_button_pressed)
+	var restart_button: Button = game_over_panel.get_node("RestartButton")
+	if not restart_button.pressed.is_connected(_on_restart_button_pressed):
+		restart_button.pressed.connect(_on_restart_button_pressed)
 	
-	self.update_ui()
-	self.message_label.text = "Welcome to the Labyrinth"
+	update_ui()
+	message_label.text = "Welcome to the Labyrinth"
 
 func start_new_game() -> void:
-	self.empty_doors_count = 0
-	self.is_game_over = false
-	self.game_started = true
-	self.start_panel.visible = false
-	self.game_over_panel.visible = false
-	self.combat_panel.visible = false
+	empty_doors_count = 0
+	is_game_over = false
+	game_started = true
+	is_moving = false
+	start_panel.visible = false
+	game_over_panel.visible = false
+	combat_panel.visible = false
 	
-	if self.player:
-		self.player.set_physics_process(true)
-		self.player.health = 10
-		self.player.has_shield = false
-		self.player.has_double_attack = false
-		self.reset_player()
+	if player_entity:
+		player_entity.set_physics_process(true)
+		player_entity.health = 10
+		player_entity.has_shield = false
+		player_entity.has_double_attack = false
+		reset_player()
 	
-	self.randomize_doors()
-	self.update_ui()
-	self.message_label.text = "Choose a door!"
+	randomize_doors()
+	update_ui()
+	message_label.text = "Choose a door!"
 
 func _on_start_button_pressed() -> void:
-	self.start_new_game()
+	start_new_game()
 
 func _on_restart_button_pressed() -> void:
-	self.start_new_game()
+	start_new_game()
 
 func randomize_doors() -> void:
-	var types: Array[int] = [0, 1, 2] # 0: Monster, 1: Chest, 2: Empty
-	types.shuffle()
+	var type_options: Array[String] = ["monster", "chest", "empty"]
 	
-	for i in range(self.doors.size()):
-		self.doors[i].set_type(types[i])
-		if not self.doors[i].door_entered.is_connected(self._on_door_entered):
-			self.doors[i].door_entered.connect(self._on_door_entered)
+	if empty_doors_count >= 4:
+		type_options = ["monster", "chest", "exit"]
+	
+	type_options.shuffle()
+	
+	for i in range(doors.size()):
+		var d = doors[i]
+		d.type = str(type_options[i])
+		if d.has_method("reset_visuals"):
+			d.reset_visuals()
 
-func _on_door_entered(type: String) -> void:
-	if self.is_game_over or not self.game_started:
+func move_player_to_door(door: Area2D) -> void:
+	if is_game_over or not game_started or is_moving:
+		return
+	is_moving = true
+	var tween = create_tween()
+	tween.tween_property(player_entity, "global_position", door.global_position, 0.5)
+	await tween.finished
+	if door.has_method("reveal_content"):
+		door.reveal_content()
+	await get_tree().create_timer(0.6).timeout
+	_on_door_entered(door)
+
+func _on_door_entered(door: Area2D) -> void:
+	if is_game_over or not game_started:
 		return
 		
-	match type:
+	match door.type:
 		"monster":
-			self.message_label.text = ""
-			self.start_combat()
+			message_label.text = ""
+			start_combat()
 		"chest":
-			self.apply_treasure()
-			self.reset_player()
+			apply_treasure()
+			reset_player()
+			is_moving = false
 		"empty":
-			self.empty_doors_count += 1
-			self.message_label.text = "An empty door! You are closer to escape."
-			self.update_ui()
-			if self.empty_doors_count >= 4:
-				self.message_label.text = "YOU ESCAPED THE LABYRINTH! YOU WIN!"
-				self.trigger_game_over(true)
-			else:
-				self.reset_player()
+			empty_doors_count += 1
+			message_label.text = "An empty door! Progress: %d/4" % empty_doors_count
+			update_ui()
+			reset_player()
+			is_moving = false
+		"exit":
+			message_label.text = "YOU ESCAPED THE LABYRINTH! YOU WIN!"
+			trigger_game_over(true)
+			is_moving = false
 	
-	if not self.is_game_over and type != "monster":
-		self.randomize_doors()
+	if not is_game_over and door.type != "monster":
+		randomize_doors()
 
 func apply_treasure() -> void:
 	var roll: int = randi() % 4
-	if self.player:
+	if player_entity:
 		match roll:
 			0:
-				self.player.health += 2
-				self.message_label.text = "Found a Health Potion! +2 HP"
+				player_entity.health += 2
+				message_label.text = "Found a Health Potion! +2 HP"
 			1:
-				self.player.health += 5
-				self.message_label.text = "Found a Great Health Potion! +5 HP"
+				player_entity.health += 5
+				message_label.text = "Found a Great Health Potion! +5 HP"
 			2:
-				self.player.has_shield = true
-				self.message_label.text = "Found a Shield! Next attack negated."
+				player_entity.has_shield = true
+				message_label.text = "Found a Shield! Next attack negated."
 			3:
-				self.player.has_double_attack = true
-				self.message_label.text = "Found an Attack Buff! Next attack x2."
-	self.update_ui()
+				player_entity.has_double_attack = true
+				message_label.text = "Found an Attack Buff! Next attack x2."
+	update_ui()
 
 func start_combat() -> void:
-	if self.player:
-		self.player.set_physics_process(false)
-	self.monster_health = (randi() % 5) + 5
-	self.is_player_turn = true
-	self.battle_label.text = "Monster! Let's battle!"
-	self.monster_label.text = "Monster Health: " + str(self.monster_health)
-	self.roll_label.text = "It is your turn to roll!"
-	self.attack_button.text = "Roll the dice? (Yes)"
-	self.attack_button.disabled = false
-	self.combat_panel.visible = true
+	if player_entity:
+		player_entity.set_physics_process(false)
+	monster_health = (randi() % 5) + 5
+	is_player_turn = true
+	battle_label.text = "Monster! Let's battle!"
+	monster_label.text = "Monster Health: " + str(monster_health)
+	roll_label.text = "It is your turn to roll!"
+	attack_button.text = "Roll the dice? (Yes)"
+	attack_button.disabled = false
+	combat_panel.visible = true
 
 func _on_attack_button_pressed() -> void:
-	if self.is_player_turn:
-		self.player_attack()
+	if is_player_turn:
+		player_attack()
 	else:
-		self.monster_attack()
+		monster_attack()
 
 func player_attack() -> void:
-	self.attack_button.disabled = true
+	attack_button.disabled = true
 	var player_roll: int = (randi() % 6) + 1
 	var player_damage: int = player_roll
 	
-	if self.player and self.player.has_double_attack:
+	if player_entity and player_entity.has_double_attack:
 		player_damage *= 2
-		self.player.has_double_attack = false
+		player_entity.has_double_attack = false
 	
-	self.monster_health -= player_damage
-	self.monster_label.text = "Monster Health: " + str(max(0, self.monster_health))
-	self.roll_label.text = "You rolled a " + str(player_roll) + "! Dealt " + str(player_damage) + " damage."
+	monster_health -= player_damage
+	monster_label.text = "Monster Health: " + str(max(0, monster_health))
+	roll_label.text = "You rolled a " + str(player_roll) + "! Dealt " + str(player_damage) + " damage."
 	
-	await self.get_tree().create_timer(1.5).timeout
+	await get_tree().create_timer(1.5).timeout
 	
-	if self.monster_health <= 0:
-		self.roll_label.text = "Monster defeated!"
-		await self.get_tree().create_timer(1.0).timeout
-		self.attack_button.disabled = false
-		self.combat_panel.visible = false
-		if self.player:
-			self.player.set_physics_process(true)
-			self.reset_player()
-		self.randomize_doors()
-		self.update_ui()
-		self.message_label.text = "Monster defeated! Choose another door."
+	if monster_health <= 0:
+		roll_label.text = "Monster defeated!"
+		await get_tree().create_timer(1.0).timeout
+		attack_button.disabled = false
+		combat_panel.visible = false
+		if player_entity:
+			player_entity.set_physics_process(true)
+			reset_player()
+		is_moving = false
+		randomize_doors()
+		update_ui()
+		message_label.text = "Monster defeated! Choose another door."
 	else:
-		self.is_player_turn = false
-		self.battle_label.text = "Monster's turn to roll..."
-		self.attack_button.text = "Continue?"
-		self.attack_button.disabled = false
+		is_player_turn = false
+		battle_label.text = "Monster's turn to roll..."
+		attack_button.text = "Continue?"
+		attack_button.disabled = false
 
 func monster_attack() -> void:
-	self.attack_button.disabled = true
+	attack_button.disabled = true
 	var monster_roll: int = (randi() % 6) + 1
 	var monster_damage: int = monster_roll
 	
-	if self.player:
-		if self.player.has_shield:
+	if player_entity:
+		if player_entity.has_shield:
 			monster_damage = 0
-			self.player.has_shield = false
-			self.roll_label.text = "Monster rolled " + str(monster_roll) + ". SHIELD BLOCKED!"
+			player_entity.has_shield = false
+			roll_label.text = "Monster rolled " + str(monster_roll) + ". SHIELD BLOCKED!"
 		else:
-			self.player.health -= monster_damage
-			self.roll_label.text = "Monster rolled " + str(monster_roll) + ". You took " + str(monster_damage) + " damage!"
+			player_entity.health -= monster_damage
+			roll_label.text = "Monster rolled " + str(monster_roll) + ". You took " + str(monster_damage) + " damage!"
 	
-	self.update_ui()
-	await self.get_tree().create_timer(1.5).timeout
+	update_ui()
+	await get_tree().create_timer(1.5).timeout
 	
-	if self.player and self.player.health <= 0:
-		self.combat_panel.visible = false
-		self.trigger_game_over(false)
+	if player_entity and player_entity.health <= 0:
+		combat_panel.visible = false
+		trigger_game_over(false)
 	else:
-		self.is_player_turn = true
-		self.battle_label.text = "It is your turn to roll!"
-		self.attack_button.text = "Roll the dice? (Yes)"
-		self.attack_button.disabled = false
+		is_player_turn = true
+		battle_label.text = "It is your turn to roll!"
+		attack_button.text = "Roll the dice? (Yes)"
+		attack_button.disabled = false
 
 func update_ui() -> void:
-	if self.player:
-		self.health_label.text = "Health: " + str(self.player.health)
-		if self.player.has_shield: self.health_label.text += " [SHIELD]"
-		if self.player.has_double_attack: self.health_label.text += " [ATK x2]"
+	if player_entity:
+		health_label.text = "Health: " + str(player_entity.health)
+		if player_entity.has_shield:
+			health_label.text += " [SHIELD]"
+		if player_entity.has_double_attack:
+			health_label.text += " [ATK x2]"
 
 func reset_player() -> void:
-	if self.player:
-		self.player.velocity = Vector2.ZERO
-		self.player.position = Vector2(576, 500)
+	if player_entity:
+		player_entity.velocity = Vector2.ZERO
+		player_entity.position = Vector2(576, 500)
 
 func trigger_game_over(win: bool) -> void:
-	self.is_game_over = true
-	self.game_started = false
-	if self.player:
-		self.player.set_physics_process(false)
-	self.game_over_panel.visible = true
-	var game_over_label = self.game_over_panel.get_node("GameOverLabel")
+	is_game_over = true
+	game_started = false
+	if player_entity:
+		player_entity.set_physics_process(false)
+	game_over_panel.visible = true
+	var game_over_label = game_over_panel.get_node("GameOverLabel")
 	if win:
 		game_over_label.text = "YOU ESCAPED!"
 	else:
