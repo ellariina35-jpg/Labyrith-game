@@ -20,9 +20,8 @@ This is a simple dungeon escape game created for educational purposes. Navigate 
 ## 🚀 Running the Game
 
 Simply run the executable:
-```
+
 Labyrinth Espace.exe
-```
 
 **System Requirements:**
 - Windows (x86_64)
@@ -32,19 +31,7 @@ Labyrinth Espace.exe
 
 - [Godot Engine](https://godotengine.org/) - Game engine
 - version: 4.6.2.stable.mono
-- GDScript - Scripting language
-
-## 📁 Project Structure
-
-```
-├── Main.gd / Main.tscn       - Main game scene and logic
-├── Player.tscn               - Player character
-├── Door.tscn                 - Door/transition mechanics
-├── player_character.gd       - Player behavior
-├── door.gd                   - Door behavior
-├── project.godot             - Godot project configuration
-└── Labyrinth Espace.exe      - Compiled game executable
-```
+- GDScript - Scripting languge
 
 ## 👨‍💻 Made By
 
