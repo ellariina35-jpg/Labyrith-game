@@ -1,3 +1,96 @@
-# Godot 4+ specific ignores
+# ==========================================
+# Godot 4 & Godot 3 Engine Files
+# ==========================================
+# Godot-specific cache, imported resource database, and editor settings
 .godot/
-/android/
+.import/
+
+# Imported resources and translation caches
+export.cfg
+export_presets.cfg
+
+# Mono / C# specific files (if using Godot .NET)
+.mono/
+[Bb]in/
+[Oo]bj/
+*.csprojAssemblyReference.cache
+
+# GDNative / GDExtension compilation artifacts
+*.translation
+*.so
+*.dylib
+*.dll
+*.lib
+*.exp
+*.ilk
+*.pdb
+
+# ==========================================
+# Game Builds / Export Outputs
+# ==========================================
+# Destination folders where exported packages (.exe, .pck, .apk, etc.) are saved
+build/
+builds/
+export/
+bin/
+dist/
+
+# ==========================================
+# Ziva / DCC / Rigging & Sim Caches
+# ==========================================
+# Maya / DCC workspace and temporary autosaves
+*.mb.swp
+*.ma.swp
+*~
+*.autosave
+
+# Large cache/simulation files (Alembic, USD, OpenVDB, FBX baked caches)
+# Note: Keep lightweight source runtime meshes/rigs tracked, ignore heavy simulations
+*.abc
+*.vdb
+*.zCache/
+*Cache/
+*_cache/
+
+# ==========================================
+# IDE & Code Editors
+# ==========================================
+# Visual Studio / Visual Studio Code
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Android Studio / Gradle (if targeting mobile)
+.gradle/
+local.properties
+.cxx/
+
+# ==========================================
+# Operating System Junk
+# ==========================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
